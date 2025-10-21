@@ -1,0 +1,118 @@
+{
+  "player_name": "Duy0909",
+  "level_unlocked": 7,
+  "unlocked_towers": [
+    "gun",
+    "sniper",
+    "splash",
+    "slow"
+  ],
+  "achievements": {
+    "untouchable": true
+  },
+  "leaderboard": [
+    {
+      "name": "Duy",
+      "level": 4,
+      "score": 22804,
+      "ts": 1756461072
+    },
+    {
+      "name": "Duy",
+      "level": 3,
+      "score": 21156,
+      "ts": 1756461046
+    },
+    {
+      "name": "Duy",
+      "level": 6,
+      "score": 5961,
+      "ts": 1756468578
+    },
+    {
+      "name": "Duy",
+      "level": 5,
+      "score": 5668,
+      "ts": 1756468519
+    },
+    {
+      "name": "Duy",
+      "level": 4,
+      "score": 4974,
+      "ts": 1756468458
+    },
+    {
+      "name": "Duy",
+      "level": 3,
+      "score": 4601,
+      "ts": 1756468020
+    },
+    {
+      "name": "Duy",
+      "level": 4,
+      "score": 4082,
+      "ts": 1756466434
+    },
+    {
+      "name": "Duy",
+      "level": 2,
+      "score": 3849,
+      "ts": 1756467979
+    },
+    {
+      "name": "Duy",
+      "level": 3,
+      "score": 3576,
+      "ts": 1756465996
+    },
+    {
+      "name": "Duy",
+      "level": 2,
+      "score": 3148,
+      "ts": 1756465507
+    },
+    {
+      "name": "Duy",
+      "level": 2,
+      "score": 3142,
+      "ts": 1756460992
+    },
+    {
+      "name": "Duy",
+      "level": 1,
+      "score": 2704,
+      "ts": 1756466767
+    },
+    {
+      "name": "Duy",
+      "level": 1,
+      "score": 2596,
+      "ts": 1756465461
+    },
+    {
+      "name": "Player",
+      "level": 1,
+      "score": 2557,
+      "ts": 1756460935
+    }
+  ],
+  "stars": 11,
+  "settings": {
+    "music": true,
+    "sfx": true,
+    "volume": 0.6
+  },
+  "level_unlocked_by_mode": {
+    "Easy": 7,
+    "Normal": 1,
+    "Hard": 1
+  },
+  "level_stars": {},
+  "available_for_purchase": [
+    "gun",
+    "sniper",
+    "splash",
+    "slow"
+  ],
+  "coins": 5
+}
