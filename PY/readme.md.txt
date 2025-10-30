@@ -1,1 +1,0 @@
-Chạy game từ file tower_defense.py
