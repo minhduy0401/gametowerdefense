@@ -1,0 +1,9 @@
+Cày pygame (mở CMD gõ lệnh pip install pygame)
+Chạy game từ file tower_defense.py
+    Trong tựa game tower defense này, bạn vào vai chỉ huy phòng thủ, 
+bố trí và nâng cấp nhiều loại tháp để ngăn chặn các đợt quái vật
+tiến về căn cứ. Mỗi tháp có đặc điểm và vai trò riêng, yêu cầu 
+người chơi cân bằng tài nguyên, chọn vị trí chiến lược và kích 
+hoạt kỹ năng đặc biệt vào những thời điểm quyết định. Đồ họa 2D 
+sinh động cùng hiệu ứng đạn đạo và âm thanh nền tăng thêm kịch tính.
+Trò chơi phù hợp cho cả người mới lẫn người thích thử thách chiến thuật lâu dài.
