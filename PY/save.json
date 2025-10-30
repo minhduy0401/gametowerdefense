@@ -98,8 +98,8 @@
   ],
   "stars": 11,
   "settings": {
-    "music": true,
-    "sfx": true,
+    "music": false,
+    "sfx": false,
     "volume": 0.6
   },
   "level_unlocked_by_mode": {

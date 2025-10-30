@@ -253,7 +253,7 @@
   },
   "1": {
     "level_unlocked": 15,
-    "stars": 38,
+    "stars": 51,
     "unlocked_towers": [
       "gun",
       "minigun",
@@ -392,9 +392,9 @@
         "is_permanent": true
       }
     ],
-    "total_kills": 3243,
-    "total_towers_built": 822,
-    "total_money_spent": 421940,
+    "total_kills": 3713,
+    "total_towers_built": 920,
+    "total_money_spent": 486370,
     "total_powerups_used": 39,
     "player_name": "Duyy",
     "salt": "50f14ac4a9db81e2",
@@ -402,8 +402,8 @@
     "current_loadout": [
       "mortar",
       "laser",
-      "poison",
-      "electric"
+      "electric",
+      "gun"
     ],
     "level_unlocked_by_mode": {
       "Easy": 13,
@@ -424,7 +424,12 @@
       "Normal_L999": 3,
       "Easy_L2": 3,
       "Hard_L3": 1,
-      "Easy_L3": 3
+      "Easy_L3": 3,
+      "Easy_L6": 3,
+      "Easy_L5": 3,
+      "Easy_L4": 3,
+      "Easy_L7": 1,
+      "Easy_L8": 3
     },
     "available_for_purchase": [
       "gun",
@@ -440,7 +445,7 @@
       "mortar",
       "ice"
     ],
-    "coins": 18
+    "coins": 38
   },
   "2": {
     "pass": "2",
@@ -870,5 +875,102 @@
     "achievements": {},
     "leaderboard": [],
     "player_name": "Duy0"
+  },
+  "o": {
+    "salt": "e9c7431203854cce",
+    "pw": "1177be962441a2a6e711eacd230492df9bfaee7f7fab0750903c5f49e093b714",
+    "level_unlocked": 1,
+    "level_unlocked_by_mode": {
+      "Easy": 1,
+      "Normal": 1,
+      "Hard": 1
+    },
+    "unlocked_towers": [
+      "gun"
+    ],
+    "available_for_purchase": [
+      "gun"
+    ],
+    "current_loadout": [
+      "gun"
+    ],
+    "stars": 0,
+    "coins": 0,
+    "achievements": {},
+    "leaderboard": [],
+    "player_name": "duy000"
+  },
+  "kk": {
+    "salt": "c6e73c3a2ca4f96b",
+    "pw": "13ab6fbf34e1808957546fb3976cc98b097ee25e5cef8e8a5dcc5d9ab1a13132",
+    "level_unlocked": 4,
+    "level_unlocked_by_mode": {
+      "Easy": 4,
+      "Normal": 1,
+      "Hard": 1
+    },
+    "unlocked_towers": [
+      "slow",
+      "gun"
+    ],
+    "available_for_purchase": [
+      "slow",
+      "gun",
+      "splash",
+      "sniper"
+    ],
+    "current_loadout": [
+      "gun",
+      "slow"
+    ],
+    "stars": 9,
+    "coins": 2,
+    "achievements": {},
+    "leaderboard": [
+      {
+        "name": "kk",
+        "level": 999,
+        "wave": 11,
+        "score": 6030,
+        "ts": 1761114850,
+        "is_permanent": true
+      }
+    ],
+    "player_name": "kk",
+    "level_stars": {
+      "Easy_L1": 3,
+      "Easy_L2": 3,
+      "Easy_L3": 3
+    },
+    "total_kills": 81,
+    "total_towers_built": 34,
+    "total_money_spent": 12960,
+    "total_powerups_used": 0
+  },
+  "new": {
+    "salt": "ec3256175e779371",
+    "pw": "1045fb60e1eaafd3f40e6b2e7dd43cb29aa769432ae45512c2055d9b5f54e63e",
+    "level_unlocked": 1,
+    "level_unlocked_by_mode": {
+      "Easy": 1,
+      "Normal": 1,
+      "Hard": 1
+    },
+    "unlocked_towers": [
+      "gun"
+    ],
+    "available_for_purchase": [
+      "gun"
+    ],
+    "current_loadout": [],
+    "stars": 0,
+    "coins": 0,
+    "achievements": {},
+    "leaderboard": [],
+    "player_name": "new",
+    "total_kills": 0,
+    "total_towers_built": 0,
+    "total_money_spent": 0,
+    "total_powerups_used": 0
   }
 }

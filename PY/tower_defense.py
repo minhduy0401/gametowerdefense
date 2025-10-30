@@ -1,4 +1,10 @@
 ﻿import os, time, random, math, hashlib, secrets, json, sys
+import io
+
+# Fix UTF-8 encoding cho Windows console
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Set, Dict
 import pygame
@@ -968,10 +974,14 @@ class Game:
     def menu_name(self):
         """Đổi tên người chơi."""
         self.scene = SCENE_NAME
-        # ô nhập tên - mặc định là tên tài khoản
+        # ô nhập tên - logic thông minh
         if self.current_user and self.current_user in self.accounts:
-            # Hiển thị tên tài khoản làm mặc định để người dùng thấy và có thể sửa
-            self.name_input = self.current_user
+            # Lấy player_name hiện tại từ account
+            current_player_name = self.accounts[self.current_user].get("player_name", self.current_user)
+            
+            # Nếu player_name khác username (đã đổi tên) → hiển thị tên đã đổi
+            # Nếu player_name = username (chưa đổi) → hiển thị username
+            self.name_input = current_player_name
         else:
             current_player_name = self.save.get("player_name", "Player")
             self.name_input = current_player_name
@@ -1177,8 +1187,11 @@ class Game:
         title = f"Preview Map Level {next_level} - Mode: {current_mode}"
         self.screen.blit(self.bigfont.render(title, True, ORANGE), (40, 40))
         
-        # Vẽ mini map
-        map_data = make_map(next_level)
+        # Vẽ mini map - sử dụng permanent map nếu level = 999
+        if next_level == 999:
+            map_data = make_permanent_map()
+        else:
+            map_data = make_map(next_level)
         preview_scale = 0.4  # Thu nhỏ map để vừa màn hình
         preview_tile = int(TILE * preview_scale)
         
@@ -1261,36 +1274,37 @@ class Game:
         for i, line in enumerate(info_lines):
             self.screen.blit(self.font.render(line, True, WHITE), (40, info_y + i * 25))
         
-        # Chú thích
-        legend_x = WIDTH - 200
-        legend_y = offset_y
-        legend_items = [
-            ("Cỏ", (70, 140, 80)),
-            ("Đường đi", (200, 160, 100)),
-            ("Ô đặt trụ", (100, 255, 150)),
-        ]
-        
-        self.screen.blit(self.font.render("Chú thích:", True, WHITE), (legend_x, legend_y))
-        for i, (label, color) in enumerate(legend_items):
-            y = legend_y + 30 + i * 25
-            pygame.draw.rect(self.screen, color, (legend_x, y, 20, 15))
-            self.screen.blit(self.font.render(label, True, WHITE), (legend_x + 30, y))
-        
-        # Quy luật số đường vào và placement
-        rule_y = legend_y + 150
-        self.screen.blit(self.font.render("Quy luật:", True, ORANGE), (legend_x, rule_y))
-        rules = [
-            "Lv 1-3: 1 đường",
-            "Lv 4-6: 2 đường", 
-            "Lv 7-9: 3 đường",
-            "Lv 10+: 4 đường",
-            "---",
-            "Trụ cách nhau 2-4 ô",
-            "Chỉ đặt ở ô xanh"
-        ]
-        for i, rule in enumerate(rules):
-            color = WHITE if rule != "---" else GRAY
-            self.screen.blit(self.font.render(rule, True, color), (legend_x, rule_y + 25 + i * 18))
+        # Chú thích và Quy luật - Ẩn khi xem permanent map (level 999)
+        if next_level != 999:  # Ẩn khi là permanent map
+            legend_x = WIDTH - 200
+            legend_y = offset_y
+            legend_items = [
+                ("Cỏ", (70, 140, 80)),
+                ("Đường đi", (200, 160, 100)),
+                ("Ô đặt trụ", (100, 255, 150)),
+            ]
+            
+            self.screen.blit(self.font.render("Chú thích:", True, WHITE), (legend_x, legend_y))
+            for i, (label, color) in enumerate(legend_items):
+                y = legend_y + 30 + i * 25
+                pygame.draw.rect(self.screen, color, (legend_x, y, 20, 15))
+                self.screen.blit(self.font.render(label, True, WHITE), (legend_x + 30, y))
+            
+            # Quy luật số đường vào và placement
+            rule_y = legend_y + 150
+            self.screen.blit(self.font.render("Quy luật:", True, ORANGE), (legend_x, rule_y))
+            rules = [
+                "Lv 1-3: 1 đường",
+                "Lv 4-6: 2 đường", 
+                "Lv 7-9: 3 đường",
+                "Lv 10+: 4 đường",
+                "---",
+                "Trụ cách nhau 2-4 ô",
+                "Chỉ đặt ở ô xanh"
+            ]
+            for i, rule in enumerate(rules):
+                color = WHITE if rule != "---" else GRAY
+                self.screen.blit(self.font.render(rule, True, color), (legend_x, rule_y + 25 + i * 18))
         
         # Hướng dẫn
         self.screen.blit(self.font.render("ESC: về menu", True, WHITE), (20, HEIGHT - 30))
@@ -1621,6 +1635,10 @@ class Game:
         self.menu_buttons = []
         self.settings_buttons = []  # Buttons cho màn hình settings
         
+        # Preview map state
+        self.selected_level_preview = None
+        self.selected_mode_preview = None
+        
         # Khởi tạo pause_buttons trước để tránh lỗi AttributeError
         self.pause_buttons = []
         
@@ -1783,7 +1801,7 @@ class Game:
             
             # Cột phải - 4 nút phụ
             sub_items = [
-                ("Xem trước Map", self.menu_map_preview),
+                ("Cài đặt", self.menu_settings),
                 ("Đổi tên người chơi", self.menu_name),
                 ("Đăng xuất", self.menu_logout),
                 ("Thoát", self.quit_game),
@@ -1823,21 +1841,7 @@ class Game:
         """Thêm nút bật/tắt âm thanh ở góc dưới trái menu."""
         # Vị trí góc dưới trái - tối ưu hóa
         x = 25
-        y_bottom = HEIGHT - 120
-        w, h = 150, 40
-        gap = 50
-        
-        # Nút nhạc nền - thiết kế chuyên nghiệp
-        music_text = "NHẠC NỀN" if self.save["settings"]["music"] else "NHẠC TẮT"
-        music_color = (45, 140, 85) if self.save["settings"]["music"] else (160, 60, 60)  # Màu gradient đẹp
-        self.menu_buttons.append(Button((x, y_bottom, w, h), music_text, self.toggle_music, 
-                                      bg=music_color, fg=WHITE))
-        
-        # Nút âm thanh súng - thiết kế chuyên nghiệp
-        sfx_text = "ÂM THANH" if self.save["settings"]["sfx"] else "ÂM TẮT"
-        sfx_color = (45, 140, 85) if self.save["settings"]["sfx"] else (160, 60, 60)  # Màu gradient đẹp
-        self.menu_buttons.append(Button((x, y_bottom + gap, w, h), sfx_text, self.toggle_sfx,
-                                      bg=sfx_color, fg=WHITE))
+        # Đã xóa 2 nút nhạc nền và âm thanh - sử dụng menu Cài đặt thay thế
 
     def quit_game(self):
         """Thoát game an toàn khi bấm nút Thoát (menu/pause)."""
@@ -2069,6 +2073,8 @@ class Game:
 
         elif event.type == pygame.MOUSEBUTTONDOWN and self.lives > 0 and not self.win_level and not self.paused:
             mx, my = pygame.mouse.get_pos()
+            # click Audio controls
+            if self._audio_control_click(mx,my): return
             # click Powerup
             if self._powerup_click(mx,my): return
             # click chọn trụ ở hotbar
@@ -2275,6 +2281,28 @@ class Game:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = pygame.mouse.get_pos()
             
+            # Kiểm tra click vào preview panel trước
+            if hasattr(self, '_preview_rects') and self._preview_rects:
+                # Nút CHƠI
+                if 'play' in self._preview_rects and self._preview_rects['play'].collidepoint((mx, my)):
+                    if hasattr(self, 'selected_level_preview') and self.selected_level_preview:
+                        # Bắt đầu chơi level đã chọn
+                        self._init_runtime(self.selected_mode_preview, self.selected_level_preview, new_game=False)
+                        self.scene = SCENE_GAME
+                        if self.save["settings"]["music"]:
+                            play_random_music(self.game_tracks, self.save["settings"]["volume"])
+                        # Reset preview
+                        self.selected_level_preview = None
+                        self.selected_mode_preview = None
+                        return
+                
+                # Nút HỦY
+                if 'cancel' in self._preview_rects and self._preview_rects['cancel'].collidepoint((mx, my)):
+                    # Đóng preview
+                    self.selected_level_preview = None
+                    self.selected_mode_preview = None
+                    return
+            
             # Lấy số level đã mở theo chế độ hiện tại
             current_mode = MODES[self.menu_mode_idx]
             
@@ -2321,11 +2349,9 @@ class Game:
                     except Exception:
                         continue
                     if rect.collidepoint((mx, my)):
-                        # Start the selected level
-                        self._init_runtime(MODES[self.menu_mode_idx], lvl, new_game=False)
-                        self.scene = SCENE_GAME
-                        if self.save["settings"]["music"]:
-                            play_random_music(self.game_tracks, self.save["settings"]["volume"])
+                        # Hiển thị preview map thay vì chơi ngay
+                        self.selected_level_preview = lvl
+                        self.selected_mode_preview = MODES[self.menu_mode_idx]
                         return
 
             # Fallback layout (should rarely be used) - match draw_level_select constants
@@ -2352,11 +2378,9 @@ class Game:
                 level_rect = pygame.Rect(x, y, button_size, button_size)
                 
                 if level_rect.collidepoint((mx, my)):
-                    # Chọn level và bắt đầu chơi
-                    self._init_runtime(MODES[self.menu_mode_idx], level, new_game=False)
-                    self.scene = SCENE_GAME
-                    if self.save["settings"]["music"]:
-                        play_random_music(self.game_tracks, self.save["settings"]["volume"])
+                    # Hiển thị preview map thay vì chơi ngay
+                    self.selected_level_preview = level
+                    self.selected_mode_preview = MODES[self.menu_mode_idx]
                     return
 
 
@@ -2458,6 +2482,24 @@ class Game:
                 self.hovered_powerup = key
                 break
 
+    def _audio_control_click(self, mx, my):
+        """Xử lý click vào nút điều khiển âm thanh."""
+        panel_x = GAME_WIDTH + 5
+        # Tính toán vị trí tương tự như trong _draw_audio_controls
+        info_y = 25 + 160
+        guide_y = info_y + 95
+        audio_y = guide_y + 195
+        
+        rects = self._audio_control_rects(panel_x, audio_y)
+        
+        if rects["music"].collidepoint((mx, my)):
+            self.toggle_music()
+            return True
+        elif rects["sfx"].collidepoint((mx, my)):
+            self.toggle_sfx()
+            return True
+        return False
+    
     def _powerup_click(self, mx,my):
         # Vô hiệu hóa powerup trong setup phase
         if self.in_setup_phase:
@@ -2470,7 +2512,7 @@ class Game:
         for key, rect in self._powerup_rects().items():
             if rect.collidepoint((mx,my)):
                 # Phát âm thanh khi click powerup
-                if hasattr(self, 'snd_shoot') and self.snd_shoot:
+                if hasattr(self, 'snd_shoot') and self.snd_shoot and self.save["settings"]["sfx"]:
                     self.snd_shoot.play()
                 if key=="freeze": self.buy_freeze()
                 else: self.buy_airstrike()
@@ -2628,10 +2670,11 @@ class Game:
                             volume = 0.3  # Fast nhỏ hơn
                         
                         # Clone âm thanh và chỉnh volume
-                        original_vol = self.snd_shoot.get_volume()
-                        self.snd_shoot.set_volume(volume)
-                        self.snd_shoot.play()
-                        self.snd_shoot.set_volume(original_vol)  # Khôi phục volume gốc
+                        if self.save["settings"]["sfx"]:
+                            original_vol = self.snd_shoot.get_volume()
+                            self.snd_shoot.set_volume(volume)
+                            self.snd_shoot.play()
+                            self.snd_shoot.set_volume(original_vol)  # Khôi phục volume gốc
                     except Exception:
                         pass
 
@@ -3280,8 +3323,9 @@ class Game:
         self.screen.blit(title, (title_x, 100))
         
         # Vẽ các nút settings
+        button_font = self._get_font(18, bold=True)
         for button in self.settings_buttons:
-            button.draw(self.screen)
+            button.draw(self.screen, button_font)
         
         # Hướng dẫn
         hint_text = "ESC: Trở về menu"
@@ -3841,17 +3885,17 @@ class Game:
             score_font = self._get_font(14, bold=True)
             wave_font = self._get_font(12)
             
-            # Rank number/emoji - compact
-            rank_surf = rank_font.render(rank_emoji, True, text_color)
-            rank_pos = (card_rect.x + 12, card_rect.y + (card_height - rank_surf.get_height()) // 2)
-            self.screen.blit(rank_surf, rank_pos)
+            # Rank number/emoji - REMOVED (không hiển thị ô vuông nữa)
+            # rank_surf = rank_font.render(rank_emoji, True, text_color)
+            # rank_pos = (card_rect.x + 12, card_rect.y + (card_height - rank_surf.get_height()) // 2)
+            # self.screen.blit(rank_surf, rank_pos)
             
-            # Player name - single line compact
+            # Player name - single line compact - dời sang trái vì không có rank
             name_text = row['name'][:15] + ("..." if len(row['name']) > 15 else "")
             name_shadow = name_font.render(name_text, True, (0, 0, 0))
             name_main = name_font.render(name_text, True, text_color)
             
-            name_x = card_rect.x + 50
+            name_x = card_rect.x + 15  # Dời từ 50 sang 15 vì không có rank
             name_y = card_rect.y + (card_height - name_main.get_height()) // 2
             self.screen.blit(name_shadow, (name_x + 1, name_y + 1))
             self.screen.blit(name_main, (name_x, name_y))
@@ -3874,11 +3918,11 @@ class Game:
             self.screen.blit(score_shadow, (score_x + 1, score_y + 1))
             self.screen.blit(score_main, (score_x, score_y))
             
-            # Star icon cho top 3 - smaller và điều chỉnh vị trí
-            if i <= 3:
-                medal_surf = self._get_font(16).render("★", True, (255, 215, 0))
-                medal_pos = (card_rect.right - 25, card_rect.y + (card_height - medal_surf.get_height()) // 2)
-                self.screen.blit(medal_surf, medal_pos)
+            # Star icon cho top 3 - REMOVED (không hiển thị ô vuông nữa)
+            # if i <= 3:
+            #     medal_surf = self._get_font(16).render("★", True, (255, 215, 0))
+            #     medal_pos = (card_rect.right - 25, card_rect.y + (card_height - medal_surf.get_height()) // 2)
+            #     self.screen.blit(medal_surf, medal_pos)
         
         # 📋 Thông báo nếu không có điểm - compact và căn giữa
         if not top_scores:
@@ -4743,6 +4787,249 @@ class Game:
                 self._level_rects = {}
             # use key equal to the special level number string so handler picks it up
             self._level_rects[str(perm_level)] = perm_rect
+        
+        # ✨ PREVIEW MAP PANEL - Hiển thị khi đã chọn level
+        if hasattr(self, 'selected_level_preview') and self.selected_level_preview:
+            self._draw_map_preview_panel()
+    
+    def _draw_map_preview_panel(self):
+        """Vẽ panel preview map ở giữa màn hình."""
+        # Panel background - ở giữa màn hình, kéo xuống một chút
+        panel_width = 650
+        panel_height = 500
+        panel_rect = pygame.Rect(
+            (WIDTH - panel_width) // 2,
+            (HEIGHT - panel_height) // 2 + 120,  # Kéo xuống 50px
+            panel_width,
+            panel_height
+        )
+        
+        # Background đen đặc để che hoàn toàn phía sau
+        panel_surf = pygame.Surface((panel_rect.width, panel_rect.height))
+        panel_surf.fill((15, 20, 30))  # Màu đen xanh đậm
+        self.screen.blit(panel_surf, panel_rect)
+        
+        # Border
+        pygame.draw.rect(self.screen, (100, 150, 200), panel_rect, width=3, border_radius=15)
+        
+        # Title
+        title_font = self._get_font(20, bold=True)
+        title_text = f"LEVEL {self.selected_level_preview} - {self.selected_mode_preview}"
+        title_surf = title_font.render(title_text, True, (255, 215, 0))
+        title_rect = title_surf.get_rect(center=(panel_rect.centerx, panel_rect.y + 25))
+        self.screen.blit(title_surf, title_rect)
+        
+        # Tính toán để căn giữa toàn bộ nội dung (map + legend)
+        preview_size = 320
+        legend_width = 200
+        total_content_width = preview_size + 20 + legend_width  # map + gap + legend
+        
+        # Bắt đầu từ giữa panel
+        content_start_x = panel_rect.centerx - total_content_width // 2
+        
+        # Map preview - vẽ map nhỏ
+        preview_y = panel_rect.y + 60
+        preview_x = content_start_x
+        preview_rect = pygame.Rect(preview_x, preview_y, preview_size, preview_size)
+        
+        # Vẽ map preview đơn giản
+        self._draw_mini_map_preview(preview_rect, self.selected_level_preview)
+        
+        # ❌ ẨN Chú thích và Quy luật khi xem PERMANENT MAP (level 999)
+        if self.selected_level_preview != 999:
+            # Vẽ chú thích bên cạnh map
+            legend_x = preview_rect.right + 20
+            legend_y = preview_rect.y
+            legend_font = self._get_font(14)
+            legend_title_font = self._get_font(16, bold=True)
+            
+            # Title chú thích
+            legend_title = legend_title_font.render("Chú thích:", True, (255, 255, 255))
+            self.screen.blit(legend_title, (legend_x, legend_y))
+            legend_y += 35
+            
+            # Các mục chú thích với ô màu
+            legends = [
+                ((60, 130, 70), "Cỏ"),
+                ((200, 170, 120), "Đường đi"),
+                ((100, 200, 120), "Ô đặt trụ")
+            ]
+            
+            for color, text in legends:
+                # Vẽ ô màu
+                color_rect = pygame.Rect(legend_x, legend_y, 25, 25)
+                pygame.draw.rect(self.screen, color, color_rect)
+                pygame.draw.rect(self.screen, (200, 200, 200), color_rect, 1)
+                
+                # Vẽ text
+                text_surf = legend_font.render(text, True, WHITE)
+                self.screen.blit(text_surf, (legend_x + 35, legend_y + 3))
+                legend_y += 35
+            
+            # Quy luật về số đường
+            legend_y += 20
+            rule_title = legend_title_font.render("Quy luật:", True, (255, 200, 100))
+            self.screen.blit(rule_title, (legend_x, legend_y))
+            legend_y += 30
+            
+            rules = [
+                "Lv 1-3: 1 đường",
+                "Lv 4-6: 2 đường",
+                "Lv 7-9: 3 đường",
+                "Lv 10+: 4 đường"
+            ]
+            
+            rule_font = self._get_font(12)
+            for rule in rules:
+                rule_surf = rule_font.render(rule, True, (220, 220, 220))
+                self.screen.blit(rule_surf, (legend_x, legend_y))
+                legend_y += 24
+            
+            # Ghi chú nhỏ
+            legend_y += 10
+            note_font = self._get_font(11)
+            note1 = note_font.render("---", True, (150, 150, 150))
+            self.screen.blit(note1, (legend_x, legend_y))
+            legend_y += 20
+            note2 = note_font.render("Trụ cách nhau 2-4 ô", True, (150, 150, 150))
+            self.screen.blit(note2, (legend_x, legend_y))
+            legend_y += 18
+            note3 = note_font.render("Chỉ đặt ở ô xanh", True, (150, 150, 150))
+            self.screen.blit(note3, (legend_x, legend_y))
+        
+        # Buttons - Chơi và Hủy
+        button_y = preview_rect.bottom + 30
+        button_width = 120
+        button_height = 45
+        button_gap = 20
+        
+        # Nút "CHƠI"
+        play_button_rect = pygame.Rect(
+            panel_rect.centerx - button_width - button_gap // 2,
+            button_y,
+            button_width,
+            button_height
+        )
+        
+        mx, my = pygame.mouse.get_pos()
+        is_play_hovered = play_button_rect.collidepoint((mx, my))
+        
+        play_color = (60, 180, 100) if is_play_hovered else (40, 140, 80)
+        pygame.draw.rect(self.screen, play_color, play_button_rect, border_radius=10)
+        pygame.draw.rect(self.screen, (100, 255, 150), play_button_rect, width=2, border_radius=10)
+        
+        play_font = self._get_font(18, bold=True)
+        play_text = play_font.render("CHƠI", True, WHITE)
+        play_text_rect = play_text.get_rect(center=play_button_rect.center)
+        self.screen.blit(play_text, play_text_rect)
+        
+        # Nút "HỦY"
+        cancel_button_rect = pygame.Rect(
+            panel_rect.centerx + button_gap // 2,
+            button_y,
+            button_width,
+            button_height
+        )
+        
+        is_cancel_hovered = cancel_button_rect.collidepoint((mx, my))
+        
+        cancel_color = (180, 60, 60) if is_cancel_hovered else (140, 40, 40)
+        pygame.draw.rect(self.screen, cancel_color, cancel_button_rect, border_radius=10)
+        pygame.draw.rect(self.screen, (255, 100, 100), cancel_button_rect, width=2, border_radius=10)
+        
+        cancel_text = play_font.render("HỦY", True, WHITE)
+        cancel_text_rect = cancel_text.get_rect(center=cancel_button_rect.center)
+        self.screen.blit(cancel_text, cancel_text_rect)
+        
+        # Lưu rects để xử lý click
+        if not hasattr(self, '_preview_rects'):
+            self._preview_rects = {}
+        self._preview_rects['play'] = play_button_rect
+        self._preview_rects['cancel'] = cancel_button_rect
+    
+    def _draw_mini_map_preview(self, rect, level):
+        """Vẽ preview map nhỏ trong rect với style giống game thật, bao gồm decorations."""
+        # Lấy map data cho level này
+        try:
+            # Load đúng map cho permanent map (level 999)
+            if level == 999:
+                map_data = make_permanent_map()
+            else:
+                map_data = make_map(level)
+            if not map_data:
+                map_data = [[(0, 0), (GRID_W-1, GRID_H-1)]]
+            
+            tile_w = rect.width / GRID_W
+            tile_h = rect.height / GRID_H
+            
+            # Tạo set các ô là path
+            path_tiles = expand_path_cells(map_data)
+            
+            # Tạo temporary game object để generate tower slots và decorations
+            class TempGame:
+                def __init__(self):
+                    self.level = level
+                    self.path_cells = path_tiles
+                    self.paths_grid = map_data
+            
+            temp_game = TempGame()
+            
+            # Tạo tower slots và decorations giống game thật
+            tower_slots = self._generate_tower_slots_preview(temp_game)
+            decorations = self._generate_decorative_objects_preview(temp_game)
+            
+            # Tạo set decorations để dễ kiểm tra
+            decoration_set = set(decorations)
+            
+            # Vẽ từng ô
+            for gy in range(GRID_H):
+                for gx in range(GRID_W):
+                    px = rect.x + int(gx * tile_w)
+                    py = rect.y + int(gy * tile_h)
+                    tile_rect = pygame.Rect(px, py, int(tile_w)+1, int(tile_h)+1)
+                    
+                    if (gx, gy) in path_tiles:
+                        # Đường đi - màu vàng cát
+                        color = (200, 170, 120)
+                    elif (gx, gy) in tower_slots:
+                        # Ô đặt trụ - màu xanh lá sáng
+                        color = (100, 200, 120)
+                    else:
+                        # Cỏ thường - màu xanh (bỏ decoration, chỉ giữ cỏ đồng nhất)
+                        color = (60, 130, 70)
+                    
+                    pygame.draw.rect(self.screen, color, tile_rect)
+                    
+                    # Vẽ border nhẹ cho mỗi ô
+                    pygame.draw.rect(self.screen, (50, 110, 60), tile_rect, 1)
+            
+            # Vẽ exit gates (các ô xanh lục ở bên phải)
+            exit_positions = set()
+            for path in map_data:
+                end_x, end_y = path[-1]
+                if end_x == GRID_W:  # Exit ở bên phải
+                    gate_x = GRID_W - 1
+                    gate_y = max(0, min(GRID_H-1, end_y))
+                    exit_positions.add((gate_x, gate_y))
+            
+            for (ex, ey) in exit_positions:
+                px = rect.x + int(ex * tile_w)
+                py = rect.y + int(ey * tile_h)
+                tile_rect = pygame.Rect(px, py, int(tile_w)+1, int(tile_h)+1)
+                # Vẽ gate màu xanh lục sáng
+                pygame.draw.rect(self.screen, (50, 255, 150), tile_rect)
+                pygame.draw.rect(self.screen, (30, 200, 120), tile_rect, 1)
+            
+        except Exception as e:
+            # Fallback - chỉ hiển thị text
+            pygame.draw.rect(self.screen, (60, 120, 60), rect)
+            font = self._get_font(14)
+            text = font.render(f"Level {level}", True, WHITE)
+            text_rect = text.get_rect(center=rect.center)
+            self.screen.blit(text, text_rect)
+        
+        # Border ngoài
+        pygame.draw.rect(self.screen, (40, 40, 50), rect, width=2)
     
     def _draw_star(self, x, y, size, color):
         """Vẽ ngôi sao 5 cánh."""
@@ -5206,6 +5493,10 @@ class Game:
         for t in self.towers:
             cx, cy = t.center()
             
+            # Hiệu ứng phát sáng cho tower level 2 và 3
+            if t.level >= 2:
+                self._draw_tower_glow(t, cx, cy)
+            
             # Highlight tower được chọn
             if t == self.selected_tower_for_range:
                 # Vẽ vòng tròn highlight xung quanh tower
@@ -5227,6 +5518,34 @@ class Game:
                 pygame.draw.circle(self.screen, WHITE, (int(cx), int(cy)), 6)
                 # Badge cho trường hợp không có sprite
                 draw_level_badge(self.screen, int(cx)+18, int(cy)-18, t.level, small=False)
+    
+    def _draw_tower_glow(self, tower, cx, cy):
+        """Vẽ hiệu ứng phát sáng xung quanh tower level 2 và 3."""
+        # Tính toán pulse effect
+        pulse = abs(math.sin(time.time() * 2)) * 0.3 + 0.7  # 0.7 -> 1.0
+        
+        # Màu sắc dựa trên level
+        if tower.level == 2:
+            # Level 2 - Màu xanh dương nhạt
+            glow_color = (100, 150, 255)
+            radius_base = 35
+        else:  # Level 3
+            # Level 3 - Màu vàng gold
+            glow_color = (255, 215, 0)
+            radius_base = 40
+        
+        # Vẽ nhiều lớp glow với alpha giảm dần
+        num_layers = 4
+        for i in range(num_layers):
+            alpha = int(60 * pulse * (1 - i / num_layers))  # Alpha giảm dần từ ngoài vào
+            radius = int(radius_base * pulse * (1 + i * 0.15))
+            
+            # Tạo surface trong suốt cho glow
+            glow_surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(glow_surf, (*glow_color, alpha), (radius, radius), radius)
+            
+            # Vẽ lên screen
+            self.screen.blit(glow_surf, (int(cx - radius), int(cy - radius)))
 
     def draw_projectiles(self):
         for p in self.projectiles:
@@ -5940,6 +6259,9 @@ class Game:
 
         # ENEMY COMPOSITION PANEL - Bên phải dưới panel TẦM BẮN
         self._draw_enemy_composition_panel(panel_x, guide_y + 85)
+        
+        # AUDIO CONTROLS - Nút bật/tắt âm thanh bên phải
+        self._draw_audio_controls(panel_x, guide_y + 195)
 
         # --- Thanh chọn trụ (hotbar) - Hiển thị luôn ---
         # Thêm label cho khu vực chọn tower - đặt giữa map và hotbar
@@ -6198,7 +6520,7 @@ class Game:
             return
 
         title = self.bigfont.render("TẠM DỪNG", True, ORANGE)
-        self.screen.blit(title, title.get_rect(center=(WIDTH//2, HEIGHT//2 - 120)))
+        self.screen.blit(title, title.get_rect(center=(WIDTH//2, HEIGHT//2 - 180)))
         
         # Kiểm tra xem pause_buttons có tồn tại không
         if hasattr(self, 'pause_buttons') and self.pause_buttons:
@@ -6305,6 +6627,57 @@ class Game:
         total_all = sum(enemies_to_spawn.values()) + sum(enemies_on_map.values())
         total_text = f"Tổng cộng: {total_all}"
         self.screen.blit(info_font.render(total_text, True, WHITE), (panel_x, panel_y + 60))
+    
+    def _audio_control_rects(self, panel_x, panel_y):
+        """Trả về rects cho các nút điều khiển âm thanh."""
+        button_width = 130
+        button_height = 32
+        gap = 8
+        
+        music_rect = pygame.Rect(panel_x, panel_y + 25, button_width, button_height)
+        sfx_rect = pygame.Rect(panel_x + button_width + gap, panel_y + 25, button_width, button_height)
+        
+        return {"music": music_rect, "sfx": sfx_rect}
+    
+    def _draw_audio_controls(self, panel_x, panel_y):
+        """Vẽ panel điều khiển âm thanh bên phải."""
+        panel_width = 320
+        panel_height = 70
+        
+        # Background panel
+        panel_bg = (40, 50, 60)
+        border_color = (70, 90, 110)
+        pygame.draw.rect(self.screen, panel_bg, (panel_x-5, panel_y-5, panel_width, panel_height), border_radius=10)
+        pygame.draw.rect(self.screen, border_color, (panel_x-5, panel_y-5, panel_width, panel_height), width=2, border_radius=10)
+        
+        # Title
+        title_font = self._get_font(16, bold=True)
+        self.screen.blit(title_font.render("ÂM THANH", True, WHITE), (panel_x, panel_y))
+        
+        rects = self._audio_control_rects(panel_x, panel_y)
+        small_font = self._get_font(13)
+        
+        # Nút nhạc nền
+        music_enabled = self.save["settings"]["music"]
+        music_color = (45, 140, 85) if music_enabled else (140, 60, 60)
+        music_text = "Nhạc: BẬT" if music_enabled else "Nhạc: TẮT"
+        
+        pygame.draw.rect(self.screen, music_color, rects["music"], border_radius=8)
+        pygame.draw.rect(self.screen, WHITE, rects["music"], width=2, border_radius=8)
+        text_surf = small_font.render(music_text, True, WHITE)
+        text_rect = text_surf.get_rect(center=rects["music"].center)
+        self.screen.blit(text_surf, text_rect)
+        
+        # Nút âm thanh hiệu ứng
+        sfx_enabled = self.save["settings"]["sfx"]
+        sfx_color = (45, 140, 85) if sfx_enabled else (140, 60, 60)
+        sfx_text = "Hiệu ứng: BẬT" if sfx_enabled else "Hiệu ứng: TẮT"
+        
+        pygame.draw.rect(self.screen, sfx_color, rects["sfx"], border_radius=8)
+        pygame.draw.rect(self.screen, WHITE, rects["sfx"], width=2, border_radius=8)
+        text_surf = small_font.render(sfx_text, True, WHITE)
+        text_rect = text_surf.get_rect(center=rects["sfx"].center)
+        self.screen.blit(text_surf, text_rect)
     
     def _draw_gradient_background(self, color1, color2, vertical=True):
         """[ART] Vẽ gradient background siêu đẹp"""

@@ -26,7 +26,7 @@ ACCOUNTS_FILE = "accounts.json"
 
 
 # Kinh tế
-BASE_START_MONEY = 10000
+BASE_START_MONEY = 3000
 BASE_START_LIVES = 5
 SELL_REFUND_RATE = 0.5
 PROJECTILE_SPEED = 420
@@ -120,7 +120,7 @@ def waves_in_level(level: int) -> int:
 
 MODES = ["Easy", "Normal", "Hard"]
 MODE_PARAMS = {
-    "Easy":   {"hp_mul":0.85, "spd_mul":0.95, "money":BASE_START_MONEY+100, "lives":BASE_START_LIVES+5},
+    "Easy":   {"hp_mul":0.85, "spd_mul":0.95, "money":BASE_START_MONEY+500, "lives":BASE_START_LIVES+5},
     "Normal": {"hp_mul":1.00, "spd_mul":1.00, "money":BASE_START_MONEY,     "lives":BASE_START_LIVES},
     "Hard":   {"hp_mul":1.30, "spd_mul":1.15, "money":BASE_START_MONEY-300,  "lives":BASE_START_LIVES-4},
 }
